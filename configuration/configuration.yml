@@ -1,0 +1,23 @@
+server:
+  address: "http://localhost:8080"
+  context_root: "/api/v1"
+  resource_one: "/data"
+  resource_batch: "/datas"
+
+bluetooth:
+  scrap:
+    interval: 1
+
+
+batch:
+  isActive: False
+  bytime:
+    isActive: False
+    interval_seconds: 5
+  bysize:
+    isActive: False
+    size: 10
+
+mock:
+  send:
+    isActive: True
