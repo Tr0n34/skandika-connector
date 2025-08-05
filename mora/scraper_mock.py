@@ -37,25 +37,37 @@ def parse_rower_data(data: bytearray):
 
 
 def fake_rower_data():
-    # Simule des flags pour : cadence, stroke count, power, calories, heart rate, elapsed time
     flags = (
         (1 << 0) |  # stroke rate
         (1 << 1) |  # stroke count
-        (1 << 4) |  # power
-        (1 << 7) |  # calories
-        (1 << 8) |  # heart rate
-        (1 << 9)    # elapsed time
+        (1 << 2) |  # avg_cadence_spm
+        (1 << 3) |  # distance_m
+        (1 << 4) |  # power_w
+        (1 << 5) |  # avg_power_w
+        (1 << 6) |  # resistance_level
+        (1 << 7) |  # calories_kcal
+        (1 << 8) |  # heart_rate_bpm
+        (1 << 9) |  # elapsed time
+        (1 << 10) |  # remaining_time_s
+        (1 << 11) |  # avg_pace_500m_s
+        (1 << 12)   # inst_pace_500m_s
     )
 
     data = bytearray()
     data += flags.to_bytes(2, "little")
-    data += random.randint(20, 35).to_bytes(1, "little")          # cadence
-    data += random.randint(100, 500).to_bytes(2, "little")        # stroke count
-    data += random.randint(150, 300).to_bytes(2, "little")        # power
-    data += random.randint(0, 0).to_bytes(2, "little")            # padding for distance (not used)
-    data += random.randint(50, 150).to_bytes(2, "little")         # calories
-    data += random.randint(80, 130).to_bytes(1, "little")         # heart rate
-    data += random.randint(100, 300).to_bytes(2, "little")        # elapsed time (10s unit)
+    data += random.randint(20, 35).to_bytes(1, "little")          # cadence_spm (1 byte)
+    data += random.randint(100, 500).to_bytes(2, "little")        # stroke_count (2 bytes)
+    data += random.randint(20, 35).to_bytes(1, "little")          # avg_cadence_spm (1 byte)
+    data += random.randint(1000, 5000).to_bytes(3, "little")      # distance_m (3 bytes)
+    data += random.randint(100, 300).to_bytes(2, "little")        # power_w (2 bytes)
+    data += random.randint(100, 300).to_bytes(2, "little")        # avg_power_w (2 bytes)
+    data += random.randint(1, 10).to_bytes(1, "little")           # resistance_level (1 byte)
+    data += random.randint(50, 300).to_bytes(2, "little")         # calories_kcal (2 bytes)
+    data += random.randint(80, 160).to_bytes(1, "little")         # heart_rate_bpm (1 byte)
+    data += random.randint(100, 1000).to_bytes(2, "little")       # elapsed_time_s (×0.1) (2 bytes)
+    data += random.randint(100, 1000).to_bytes(2, "little")       # remaining_time_s (×0.1) (2 bytes)
+    data += random.randint(200, 500).to_bytes(2, "little")        # avg_pace_500m_s (×0.01) (2 bytes)
+    data += random.randint(200, 500).to_bytes(2, "little")        # inst_pace_500m_s (×0.01) (2 bytes)
 
     return data
 
@@ -81,6 +93,12 @@ class MockBleakClient:
                 await asyncio.sleep(1)
 
         asyncio.create_task(simulate())
+
+    async def stop_notify(self, uuid):
+        pass
+
+    async def disconnect(self):
+        pass
 
 
 async def get_mock_client():
