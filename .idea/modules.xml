@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/skandika-connector.iml" filepath="$PROJECT_DIR$/.idea/skandika-connector.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/bluetooth-scrapper.iml" filepath="$PROJECT_DIR$/.idea/bluetooth-scrapper.iml" />
     </modules>
   </component>
 </project>
