@@ -4,6 +4,8 @@ import uuid
 from configuration.confliguration_loader import load_config
 from mora.sender_api import send_one
 from mora.sender_api import send_batch
+from mora.sender_api import start
+from mora.sender_api import stop
 from mora.scraper import get_real_client
 from mora.scraper_mock import get_mock_client
 
@@ -16,8 +18,11 @@ BATCH_BY_SIZE = configuration.batch.bysize.isActive
 BATCH_BY_TIME = configuration.batch.bytime.isActive
 API_URL = configuration.server.address
 CONTEXT_ROOT = configuration.server.context_root
-RESOURCE_BATCH = configuration.server.resource_batch
-RESOURCE_ONE = configuration.server.resource_one
+RESOURCE_BATCH = configuration.resources.row_data.url_batch
+RESOURCE_ONE = configuration.resources.row_data.url_one
+RESOURCE_TRAINING = configuration.resources.trainings.uri
+VERB_START = configuration.resources.trainings.verbs.start
+VERB_STOP = configuration.resources.trainings.verbs.stop
 SEND_INTERVAL_TIME = configuration.batch.bytime.interval_seconds
 BATCH_SIZE = configuration.batch.bysize.size
 IS_BATCH = configuration.batch.isActive
@@ -25,6 +30,7 @@ SCRAP_INTERVAL = configuration.bluetooth.scrap.interval
 
 last_send_time = None
 first_data_received = asyncio.Event()
+
 
 async def main():
     if not configuration.mock.send.isActive:
@@ -39,8 +45,6 @@ async def main():
     else:
         print("🧪 Passage en mode mock.")
         client, notify_uuid, parser = await get_mock_client()
-
-
 
     async with client:
         device_id = str(uuid.uuid4())
@@ -71,18 +75,20 @@ async def main():
         def enrich_metrics(metrics):
             enriched = metrics.copy()
             enriched["device_id"] = device_id
+            enriched["training_id"] = training_id
             return enriched
 
         try:
+            training_id = start(device_id, API_URL, CONTEXT_ROOT, RESOURCE_TRAINING, VERB_START)
             await client.start_notify(notify_uuid, on_notify)
-            print("🕒 En attente de la première émission...")
-            await first_data_received.wait()
-            print("📡 En attente de données... (CTRL+C pour quitter)")
             while True:
                 await asyncio.sleep(SCRAP_INTERVAL)
+        except asyncio.CancelledError:
+            print("🛑 Tâche annulée proprement.")
         except KeyboardInterrupt:
             print("\n🛑 Arrêt détecté, envoi de la dernière donnée avec stopDate...")
         finally:
+            stop(training_id, device_id, API_URL, CONTEXT_ROOT, RESOURCE_TRAINING, VERB_STOP)
             await client.stop_notify(notify_uuid)
             await client.disconnect()
 
@@ -93,17 +99,16 @@ def reset_data_counter():
 
 
 if __name__ == "__main__":
-    import sys
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    main_task = loop.create_task(main())
 
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError as e:
-        if "There is no current event loop" in str(e):
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-    try:
-        loop.run_until_complete(main())
+        loop.run_until_complete(main_task)
     except KeyboardInterrupt:
-        print("⏹️ Arrêt manuel détecté.")
-        sys.exit(0)
+        print("⏹️ Arrêt manuel détecté, annulation de la tâche...")
+        main_task.cancel()
+        loop.run_until_complete(main_task)
+    finally:
+        loop.close()

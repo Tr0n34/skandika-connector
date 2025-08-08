@@ -1,8 +1,16 @@
 server:
   address: "http://localhost:8080"
   context_root: "/api/v1"
-  resource_one: "/data"
-  resource_batch: "/datas"
+
+resources:
+  row_data:
+    url_one: "/data"
+    url_batch: "/datas"
+  trainings:
+    uri: "/trainings"
+    verbs:
+      start: ""
+      stop: "/stop"
 
 bluetooth:
   scrap:
